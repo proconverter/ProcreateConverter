@@ -14,19 +14,17 @@
         .cta-button { display: block; width: 80%; margin: 20px auto; padding: 15px; background-color: #3498db; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; border: none; cursor: pointer; }
         .cta-button:hover { background-color: #2980b9; }
         .form-section { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin-top: 20px; }
-        .form-section label { font-weight: bold; margin-bottom: 5px; display: block; }
+        .form-section label { font-weight: bold; display: block; margin-bottom: 5px; }
         .form-section input[type="text"], .form-section input[type="file"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 4px; }
-        .submit-button { width: 100%; padding: 15px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; cursor: pointer; }
-        .submit-button:hover { background-color: #27ae60; }
         .requirements { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 5px; margin-top: 20px; }
         .requirements ul { list-style-type: '✅ '; padding-left: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
         th { background-color: #f2f2f2; }
-        #message { text-align:center; font-weight:bold; margin-top:20px; padding: 10px; border-radius: 5px; }
-        .disclaimer { background: #e9f7ff; border: 1px solid #b3e0ff; padding: 15px; border-radius: 5px; margin-top: 20px; margin-bottom: 20px; }
-.disclaimer h3 { color: #005f9e; margin-top: 0; }
-
+        /* --- NEW STYLES FOR THE MESSAGE AREA --- */
+        .message-area { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; font-weight: bold; }
+        .message-info { background-color: #eaf2f8; color: #34495e; }
+        .message-error { background-color: #fbeee6; color: #c0392b; }
     </style>
 </head>
 <body>
@@ -70,25 +68,22 @@ We'll convert your brushes and email you a secure download link in minutes.</td>
             <form method="post" enctype="multipart/form-data">
                 <label for="order_id">Step 1: Enter Your Etsy Order ID</label>
                 <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
-                
+
                 <label for="brush_file">Step 2: Upload Your .brushset File</label>
                 <input type="file" id="brush_file" name="brush_file" required>
-                
-                <button type="submit" class="submit-button">Convert My Brushes</button>
+
+                <!-- --- ** THE NEW MESSAGE AREA ** --- -->
+                <div class="message-area {{ 'message-error' if message and 'Error:' in message else 'message-info' }}">
+                    {% if message %}
+                        {{ message }}
+                    {% else %}
+                        <strong>Disclaimer:</strong> This tool is for extracting stamp/shape images only, not complex brush textures.
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="cta-button">Convert My Brushes</button>
             </form>
         </div>
-        
-       <div class="disclaimer">
-    <h3>Important Note: Best for Stamp Brushes</h3>
-    <p>This tool is designed to extract the core image (the "shape source") from Procreate brushes. It works perfectly for <strong>stamp-style brushes</strong> like graphics, symbols, or lettering guides.</p>
-    <p>It is <strong>not</strong> intended for complex painting brushes (e.g., watercolor, fur, textures), as these rely on Procreate's engine for their appearance. The extracted PNG for a painting brush may not look like you expect.</p>
-
     </div>
-
-    <script>
-        // No JavaScript needed for basic form submission. 
-        // The browser handles it automatically.
-        // We can add validation scripts back later if needed.
-    </script>
 </body>
 </html>
