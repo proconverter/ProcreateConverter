@@ -14,26 +14,24 @@ ETSY_API_KEY = os.environ.get('ETSY_API_KEY')
 ETSY_SHOP_ID = "PresentAndCherish"
 MAX_FILE_SIZE = 50 * 1024 * 1024
 MAX_BRUSH_COUNT = 100
-MIN_IMAGE_DIMENSION = 500 
+MIN_IMAGE_DIMENSION = 500
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function: The Final Conversion Engine ---
+# --- Helper Function: The Final Conversion Engine (In-Memory) ---
 def process_brushset(filepath):
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, 'temp_extract')
     os.makedirs(temp_extract_dir, exist_ok=True)
-    
+
     try:
         with zipfile.ZipFile(filepath, 'r') as brushset_zip:
             if len(brushset_zip.namelist()) > MAX_BRUSH_COUNT * 2:
                 return None, "Error: Brush set contains more than 100 brushes."
 
             brushset_zip.extractall(temp_extract_dir)
-            
-            # --- ** THE FIX IS HERE ** ---
-            # We will store the final, converted images in a list in memory
-            final_images_to_zip = [] 
-            
+
+            final_images_to_zip = []
+
             for root, dirs, files in os.walk(temp_extract_dir):
                 for name in files:
                     try:
@@ -42,29 +40,26 @@ def process_brushset(filepath):
                             width, height = img.size
                             if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
                                 final_image = img
-                                # If it's grayscale, convert it to a transparent RGBA image
                                 if img.mode == 'L':
                                     transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
                                     transparent_img.putalpha(img)
                                     final_image = transparent_img
-                                
-                                # Save the final image (transparent or not) to an in-memory buffer
+
                                 img_buffer = io.BytesIO()
                                 final_image.save(img_buffer, format='PNG')
                                 img_buffer.seek(0)
                                 final_images_to_zip.append(img_buffer)
                     except IOError:
                         continue
-        
+
         if not final_images_to_zip:
             return None, "Error: No valid brushes found in the file. (Images might be too small)."
 
-        # Create the output ZIP file in memory
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w') as output_zip:
             for i, img_buffer in enumerate(final_images_to_zip):
                 output_zip.writestr(f'brush_{i+1}.png', img_buffer.read())
-        
+
         zip_buffer.seek(0)
         return zip_buffer, None
 
@@ -103,11 +98,11 @@ def home():
 
         if error_message:
             return render_template('index.html', message=error_message)
-        
+
         if zip_buffer:
             zip_filename = filename.replace('.brushset', '.zip')
             return send_file(zip_buffer, as_attachment=True, download_name=zip_filename, mimetype='application/zip')
-        
+
         return render_template('index.html', message="An unknown error occurred during processing.")
 
     return render_template('index.html', message="")
