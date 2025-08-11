@@ -39,17 +39,10 @@ def process_brushset(filepath):
                         with Image.open(img_path) as img:
                             width, height = img.size
                             if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
-                                # --- ** THE NEW TRANSPARENCY LOGIC ** ---
-                                # Convert the grayscale image to a transparency mask
-                                if img.mode == 'L': # 'L' mode is grayscale
-                                    # Create a new, solid black image in RGBA mode (with transparency)
+                                if img.mode == 'L':
                                     transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
-                                    # Use the grayscale image as the alpha channel for the new image
-                                    # The 'L' channel becomes the 'A' (alpha)
                                     transparent_img.putalpha(img)
-                                    # Save this new transparent version to be zipped
-                                    transparent_img.save(img_path) # Overwrite the original with the transparent version
-                                    
+                                    transparent_img.save(img_path)
                                 extracted_images.append(img_path)
                     except IOError:
                         continue
@@ -79,6 +72,8 @@ def home():
     if request.method == 'POST':
         uploaded_file = request.files.get('brush_file')
 
+        # --- ** THE FIX IS HERE ** ---
+        # The 'return' statement is now correctly included.
         if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.brushset'):
             return render_template('index.html', message="Error: You must upload a valid .brushset file.")
 
