@@ -11,7 +11,7 @@ ETSY_API_KEY = os.environ.get('ETSY_API_KEY')
 # Your Etsy Shop ID. You can find this in the URL of your Etsy shop page.
 # It's the number at the end, e.g., https://www.etsy.com/shop/YourShopName -> 12345678
 # For now, we will leave it as a placeholder.
-ETSY_SHOP_ID = "YOUR_SHOP_ID_HERE" 
+ETSY_SHOP_ID = "PresentAndCherish" 
 
 
 # This is the main route for your website (the homepage )
