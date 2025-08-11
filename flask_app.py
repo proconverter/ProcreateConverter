@@ -19,7 +19,7 @@ OUTPUT_FOLDER = 'outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# --- Helper Function: The Conversion Engine (More Robust) ---
+# --- Helper Function: The Conversion Engine (With Transparency) ---
 def process_brushset(filepath):
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, 'temp_extract')
     os.makedirs(temp_extract_dir, exist_ok=True)
@@ -39,6 +39,17 @@ def process_brushset(filepath):
                         with Image.open(img_path) as img:
                             width, height = img.size
                             if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
+                                # --- ** THE NEW TRANSPARENCY LOGIC ** ---
+                                # Convert the grayscale image to a transparency mask
+                                if img.mode == 'L': # 'L' mode is grayscale
+                                    # Create a new, solid black image in RGBA mode (with transparency)
+                                    transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+                                    # Use the grayscale image as the alpha channel for the new image
+                                    # The 'L' channel becomes the 'A' (alpha)
+                                    transparent_img.putalpha(img)
+                                    # Save this new transparent version to be zipped
+                                    transparent_img.save(img_path) # Overwrite the original with the transparent version
+                                    
                                 extracted_images.append(img_path)
                     except IOError:
                         continue
@@ -60,12 +71,8 @@ def process_brushset(filepath):
     except Exception as e:
         return None, f"An unexpected error occurred: {str(e)}"
     finally:
-        # ** THE FIX IS HERE **
-        # This 'finally' block ensures that the temp directory is
-        # always cleaned up, exactly once, no matter what happens.
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
-
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
