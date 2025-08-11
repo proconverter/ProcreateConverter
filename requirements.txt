@@ -1,1 +1,4 @@
-gunicorn --bind 0.0.0.0:10000 flask_app:app
+Flask
+requests
+Pillow
+gunicorn
