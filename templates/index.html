@@ -74,22 +74,14 @@ We'll convert your brushes and email you a secure download link in minutes.</td>
     </div>
 
     <script>
-        const uploadForm = document.getElementById('uploadForm');
-        const brushFileInput = document.getElementById('brush_file');
-        const messageElement = document.getElementById('message');
-
-        uploadForm.addEventListener('submit', function(event) {
-            if (brushFileInput.files.length > 0) {
-                const file = brushFileInput.files[0];
-                const fileSizeMB = file.size / 1024 / 1024; // in MB
-                if (fileSizeMB > 25) { // Updated to 25MB
-                    event.preventDefault(); 
-                    messageElement.textContent = 'Error: File is too large! Maximum size is 25 MB.';
-                    messageElement.style.color = 'red';
-                    brushFileInput.value = '';
-                }
-            }
-        });
-    </script>
+    // This script is just for displaying the selected file name
+    const fileInput = document.getElementById('brush_file');
+    fileInput.addEventListener('change', function() {
+        const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file selected';
+        // This part is a bit tricky as we don't have a dedicated label element.
+        // For now, we can just log it to the console to confirm it works.
+        console.log('Selected file:', fileName);
+    });
+</script>
 </body>
 </html>
