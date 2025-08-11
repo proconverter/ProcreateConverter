@@ -81,12 +81,10 @@ def home():
         order_id = request.form.get('order_id')
         uploaded_file = request.files.get('brush_file')
 
-        if not uploaded_file or not uploaded_file.filename:
-            message = "Error: No file was uploaded."
-            return render_template('index.html', message=message)
-        if not uploaded_file.filename.lower().endswith('.brushset'):
-            message = "Error: Invalid file type. Please upload a .brushset file."
-            return render_template('index.html', message=message)
+        # --- 1. FILE VALIDATION (IMPROVED) ---
+if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.brushset'):
+    message = "Error: You must upload a valid .brushset file."
+    return render_template('index.html', message=message)
         
         # (Etsy API validation is the same as before...)
         # For now, we will comment this out so we can test the conversion without a valid key
