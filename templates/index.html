@@ -14,12 +14,16 @@
         .cta-button { display: block; width: 80%; margin: 20px auto; padding: 15px; background-color: #3498db; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; border: none; cursor: pointer; }
         .cta-button:hover { background-color: #2980b9; }
         .form-section { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin-top: 20px; }
-        .form-section input[type="text"], .form-section input[type="file"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #bdc3c7; border-radius: 4px; }
+        .form-section label { font-weight: bold; margin-bottom: 5px; display: block; }
+        .form-section input[type="text"], .form-section input[type="file"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 4px; }
+        .submit-button { width: 100%; padding: 15px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; cursor: pointer; }
+        .submit-button:hover { background-color: #27ae60; }
         .requirements { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 5px; margin-top: 20px; }
         .requirements ul { list-style-type: '✅ '; padding-left: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
         th { background-color: #f2f2f2; }
+        #message { text-align:center; font-weight:bold; margin-top:20px; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -60,20 +64,28 @@ We'll convert your brushes and email you a secure download link in minutes.</td>
 
         <h2>Let's Get Started</h2>
         <div class="form-section">
-           <form id="uploadForm" method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data">
+                <label for="order_id">Step 1: Enter Your Etsy Order ID</label>
+                <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
+                
+                <label for="brush_file">Step 2: Upload Your .brushset File</label>
+                <input type="file" id="brush_file" name="brush_file" required>
+                
+                <button type="submit" class="submit-button">Convert My Brushes</button>
+            </form>
         </div>
-        <p id="message" style="text-align:center; font-weight:bold; margin-top:20px;"></p>
+        
+        <!-- This is where messages from the server will be displayed -->
+        {% if message %}
+        <p id="message">{{ message }}</p>
+        {% endif %}
+
     </div>
 
     <script>
-    // This script is just for displaying the selected file name
-    const fileInput = document.getElementById('brush_file');
-    fileInput.addEventListener('change', function() {
-        const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file selected';
-        // This part is a bit tricky as we don't have a dedicated label element.
-        // For now, we can just log it to the console to confirm it works.
-        console.log('Selected file:', fileName);
-    });
-</script>
+        // No JavaScript needed for basic form submission. 
+        // The browser handles it automatically.
+        // We can add validation scripts back later if needed.
+    </script>
 </body>
 </html>
