@@ -13,6 +13,8 @@ ETSY_API_KEY = os.environ.get('ETSY_API_KEY')
 ETSY_SHOP_ID = "PresentAndCherish"
 MAX_FILE_SIZE = 50 * 1024 * 1024
 MAX_BRUSH_COUNT = 100
+# ** NEW **: Minimum pixel dimension for a "real" brush
+MIN_IMAGE_DIMENSION = 500 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -37,13 +39,17 @@ def process_brushset(filepath):
                     try:
                         img_path = os.path.join(root, name)
                         with Image.open(img_path) as img:
-                            extracted_images.append(img_path)
+                            # --- ** THE NEW SMART FILTER ** ---
+                            # Only keep images that are reasonably large
+                            width, height = img.size
+                            if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
+                                extracted_images.append(img_path)
                     except IOError:
                         continue
         
         if not extracted_images:
             shutil.rmtree(temp_extract_dir)
-            return None, "Error: No valid images found in the .brushset file."
+            return None, "Error: No valid brushes found in the file. (Images might be too small)."
 
         output_zip_filename = os.path.basename(filepath).replace('.brushset', '.zip')
         output_zip_path = os.path.join(OUTPUT_FOLDER, output_zip_filename)
@@ -53,7 +59,7 @@ def process_brushset(filepath):
                 output_zip.write(img_path, f'brush_{i+1}.png')
 
         shutil.rmtree(temp_extract_dir)
-        return output_zip_path, None
+        return output_path, None
 
     except zipfile.BadZipFile:
         shutil.rmtree(temp_extract_dir)
@@ -69,7 +75,6 @@ def home():
         order_id = request.form.get('order_id')
         uploaded_file = request.files.get('brush_file')
 
-        # --- 1. FILE VALIDATION (IMPROVED) ---
         if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.brushset'):
             message = "Error: You must upload a valid .brushset file."
             return render_template('index.html', message=message)
@@ -82,7 +87,6 @@ def home():
         #     message = f"Error: Could not verify order. Status code: {response.status_code}."
         #     return render_template('index.html', message=message)
 
-        # --- Save the file and start conversion ---
         filename = secure_filename(uploaded_file.filename)
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         uploaded_file.save(filepath)
