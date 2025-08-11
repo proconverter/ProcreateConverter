@@ -5,7 +5,6 @@ import shutil
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 from PIL import Image
-import io # We need this for in-memory file handling
 
 app = Flask(__name__)
 
@@ -18,10 +17,14 @@ MIN_IMAGE_DIMENSION = 500
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function: The Final Conversion Engine (In-Memory) ---
+# --- Helper Function: The Final, Memory-Safe Conversion Engine ---
 def process_brushset(filepath):
-    temp_extract_dir = os.path.join(UPLOAD_FOLDER, 'temp_extract')
+    # Create unique temporary directories for this specific conversion
+    base_filename = os.path.basename(filepath)
+    temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
+    temp_output_dir = os.path.join(UPLOAD_FOLDER, f"output_{base_filename}")
     os.makedirs(temp_extract_dir, exist_ok=True)
+    os.makedirs(temp_output_dir, exist_ok=True)
 
     try:
         with zipfile.ZipFile(filepath, 'r') as brushset_zip:
@@ -30,8 +33,7 @@ def process_brushset(filepath):
 
             brushset_zip.extractall(temp_extract_dir)
 
-            final_images_to_zip = []
-
+            final_image_paths = []
             for root, dirs, files in os.walk(temp_extract_dir):
                 for name in files:
                     try:
@@ -44,32 +46,35 @@ def process_brushset(filepath):
                                     transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
                                     transparent_img.putalpha(img)
                                     final_image = transparent_img
-
-                                img_buffer = io.BytesIO()
-                                final_image.save(img_buffer, format='PNG')
-                                img_buffer.seek(0)
-                                final_images_to_zip.append(img_buffer)
+                                
+                                # Save the final transparent image to our temporary output folder
+                                output_image_path = os.path.join(temp_output_dir, name)
+                                final_image.save(output_image_path, 'PNG')
+                                final_image_paths.append(output_image_path)
                     except IOError:
                         continue
 
-        if not final_images_to_zip:
+        if not final_image_paths:
             return None, "Error: No valid brushes found in the file. (Images might be too small)."
 
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w') as output_zip:
-            for i, img_buffer in enumerate(final_images_to_zip):
-                output_zip.writestr(f'brush_{i+1}.png', img_buffer.read())
+        # Create the output ZIP file from the temporary output folder
+        output_zip_path = os.path.join(UPLOAD_FOLDER, base_filename.replace('.brushset', '.zip'))
+        with zipfile.ZipFile(output_zip_path, 'w') as output_zip:
+            for i, img_path in enumerate(final_image_paths):
+                output_zip.write(img_path, f'brush_{i+1}.png')
 
-        zip_buffer.seek(0)
-        return zip_buffer, None
+        return output_zip_path, None
 
     except zipfile.BadZipFile:
         return None, "Error: The uploaded file is not a valid .brushset (corrupt zip)."
     except Exception as e:
         return None, f"An unexpected error occurred: {str(e)}"
     finally:
+        # Clean up all our temporary folders
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
+        if os.path.exists(temp_output_dir):
+            shutil.rmtree(temp_output_dir)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -91,7 +96,7 @@ def home():
         filepath = os.path.join(UPLOAD_FOLDER, filename)
         uploaded_file.save(filepath)
 
-        zip_buffer, error_message = process_brushset(filepath)
+        output_path, error_message = process_brushset(filepath)
 
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -99,9 +104,13 @@ def home():
         if error_message:
             return render_template('index.html', message=error_message)
 
-        if zip_buffer:
-            zip_filename = filename.replace('.brushset', '.zip')
-            return send_file(zip_buffer, as_attachment=True, download_name=zip_filename, mimetype='application/zip')
+        if output_path:
+            # After sending the file, we should clean it up
+            try:
+                return send_file(output_path, as_attachment=True)
+            finally:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
 
         return render_template('index.html', message="An unknown error occurred during processing.")
 
