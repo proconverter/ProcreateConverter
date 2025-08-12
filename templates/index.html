@@ -3,87 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procreate Brush Converter</title>
+    <title>Brushset Converter</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1, h2 { text-align: center; color: #2c3e50; }
-        h1 { font-size: 2.5em; margin-bottom: 10px; }
-        h2 { font-size: 1.8em; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
-        p, li { color: #555; font-size: 1.1em; }
-        .cta-button { display: block; width: 80%; margin: 20px auto; padding: 15px; background-color: #3498db; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; border: none; cursor: pointer; }
-        .cta-button:hover { background-color: #2980b9; }
-        .form-section { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin-top: 20px; }
-        .form-section label { font-weight: bold; display: block; margin-bottom: 5px; }
-        .form-section input[type="text"], .form-section input[type="file"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 4px; }
-        .requirements { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 5px; margin-top: 20px; }
-        .requirements ul { list-style-type: '✅ '; padding-left: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        /* --- NEW STYLES FOR THE MESSAGE AREA --- */
-        .message-area { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; font-weight: bold; }
-        .message-info { background-color: #eaf2f8; color: #34495e; }
-        .message-error { background-color: #fbeee6; color: #c0392b; }
+        /* --- 1. Global Styles & Font --- */
+        :root {
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --primary-button-bg: #212529;
+            --primary-button-text: #ffffff;
+            --secondary-button-bg: #f8f9fa;
+            --secondary-button-text: #212529;
+            --error-bg: #f8d7da;
+            --error-text: #721c24;
+            --info-bg: #e2e3e5;
+            --info-text: #383d41;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        /* --- 2. The Main Card --- */
+        .converter-card {
+            background-color: var(--card-background);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 550px;
+            padding: 32px;
+            box-sizing: border-box;
+        }
+
+        /* --- 3. Typography --- */
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+        p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+        }
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* --- 4. Form Elements --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        input[type="file"] {
+            padding: 8px;
+        }
+        .submit-button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background-color: var(--primary-button-bg);
+            color: var(--primary-button-text);
+            transition: background-color 0.2s;
+        }
+        .submit-button:hover {
+            background-color: #495057;
+        }
+
+        /* --- 5. Message Area --- */
+        .message-area {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .message-info {
+            background-color: var(--info-bg);
+            color: var(--info-text);
+        }
+        .message-error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Unlock Your Procreate Brushes</h1>
-        <p style="text-align: center;">Convert any Procreate <code>.brushset</code> file into high-resolution PNGs for Photoshop, Clip Studio Paint, and any other art software.</p>
+    <div class="converter-card">
+        <h1>Brushset Converter</h1>
+        <p>Upload your .brushset file to extract the stamps as high-resolution, transparent PNGs.</p>
 
-        <h2>How It Works</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Step 1</th>
-                    <th>Step 2</th>
-                    <th>Step 3</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Purchase on Etsy</strong>  
-Buy a token pack from our Etsy shop to get your unique Order ID.</td>
-                    <td><strong>Submit Your Brush Set</strong>  
-Return here, enter your Order ID, and upload your file.</td>
-                    <td><strong>Receive Your PNGs</strong>  
-We'll convert your brushes and email you a secure download link in minutes.</td>
-                </tr>
-            </tbody>
-        </table>
-        <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="cta-button">Get Token Here</a>
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="order_id">Etsy Order ID</label>
+                <input type="text" id="order_id" name="order_id" placeholder="Enter the Order ID from your Etsy purchase" required>
+            </div>
 
-        <div class="requirements">
-            <h3>Upload Requirements</h3>
-            <ul>
-                <li>Must be a valid <code>.brushset</code> file.</li>
-                <li>Max file size: 50 MB</li>
-                <li>Max brush count: 100 brushes per set</li>
-            </ul>
-        </div>
-
-        <h2>Let's Get Started</h2>
-        <div class="form-section">
-            <form method="post" enctype="multipart/form-data">
-                <label for="order_id">Step 1: Enter Your Etsy Order ID</label>
-                <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
-
-                <label for="brush_file">Step 2: Upload Your .brushset File</label>
+            <div class="form-group">
+                <label for="brush_file">.brushset File</label>
                 <input type="file" id="brush_file" name="brush_file" required>
+            </div>
 
-                <!-- --- ** THE NEW MESSAGE AREA ** --- -->
-                <div class="message-area {{ 'message-error' if message and 'Error:' in message else 'message-info' }}">
-                    {% if message %}
-                        {{ message }}
-                    {% else %}
-                        <strong>Disclaimer:</strong> This tool is for extracting stamp/shape images only, not complex brush textures.
-                    {% endif %}
-                </div>
+            <div class="message-area {{ 'message-error' if message and 'Error:' in message else 'message-info' }}">
+                {% if message %}
+                    {{ message }}
+                {% else %}
+                    This tool extracts stamp images, not complex brush textures. Max file size: 50 MB.
+                {% endif %}
+            </div>
 
-                <button type="submit" class="cta-button">Convert My Brushes</button>
-            </form>
-        </div>
+            <button type="submit" class="submit-button">Convert My Brushes</button>
+        </form>
     </div>
 </body>
 </html>
