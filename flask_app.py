@@ -68,7 +68,9 @@ def process_brushset(filepath):
     except zipfile.BadZipFile:
         return None, "Error: The uploaded file is not a valid .brushset (corrupt zip)."
     except Exception as e:
-        return None, f"An unexpected error occurred: {str(e)}"
+        # Log the detailed error for your debugging
+        print(f"Error during brushset processing: {str(e)}")
+        return None, "An unexpected error occurred while processing the brush file."
     finally:
         # Clean up all our temporary folders
         if os.path.exists(temp_extract_dir):
@@ -76,42 +78,68 @@ def process_brushset(filepath):
         if os.path.exists(temp_output_dir):
             shutil.rmtree(temp_output_dir)
 
+# --- Main Application Route (REVISED) ---
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        uploaded_file = request.files.get('brush_file')
+        # --- 1. Etsy API Validation ---
+        try:
+            order_id = request.form.get('order_id')
+            if not order_id or not order_id.strip():
+                 return render_template('index.html', message="Error: Please provide a valid Etsy Order ID.")
 
+            # --- This is the block to uncomment when you go live ---
+            # api_url = f"https://openapi.etsy.com/v3/application/shops/{ETSY_SHOP_ID}/receipts/{order_id.strip( )}"
+            # headers = {'x-api-key': ETSY_API_KEY}
+            # response = requests.get(api_url, headers=headers, timeout=10) # Add a timeout!
+
+            # if response.status_code == 404:
+            #     return render_template('index.html', message="Error: This Order ID was not found. Please double-check the number.")
+            # elif response.status_code != 200:
+            #     # Log the actual error for your own debugging
+            #     print(f"Etsy API Error: Status {response.status_code}, Response: {response.text}")
+            #     return render_template('index.html', message="Error: Could not verify the Order ID with Etsy. Please try again later.")
+
+        except requests.exceptions.RequestException as e:
+            # Catch network errors (timeout, DNS failure, etc.)
+            print(f"Etsy API Request Failed: {e}")
+            return render_template('index.html', message="Error: Could not connect to Etsy's servers. Please try again in a few minutes.")
+
+        # --- 2. File Handling and Processing ---
+        uploaded_file = request.files.get('brush_file')
         if not uploaded_file or not uploaded_file.filename or not uploaded_file.filename.lower().endswith('.brushset'):
             return render_template('index.html', message="Error: You must upload a valid .brushset file.")
 
-        # --- Etsy API Validation (Commented out for testing) ---
-        # order_id = request.form.get('order_id')
-        # api_url = f"https://openapi.etsy.com/v3/application/shops/{ETSY_SHOP_ID}/receipts/{order_id}"
-        # headers = {'x-api-key': ETSY_API_KEY}
-        # response = requests.get(api_url, headers=headers )
-        # if response.status_code != 200:
-        #     return render_template('index.html', message=f"Error: Could not verify order. Status code: {response.status_code}.")
+        filepath = ""
+        output_path = ""
+        try:
+            filename = secure_filename(uploaded_file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            uploaded_file.save(filepath)
 
-        filename = secure_filename(uploaded_file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        uploaded_file.save(filepath)
+            output_path, error_message = process_brushset(filepath)
 
-        output_path, error_message = process_brushset(filepath)
+            if error_message:
+                # This uses the specific error from your processing function
+                return render_template('index.html', message=error_message)
 
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
-        if error_message:
-            return render_template('index.html', message=error_message)
-
-        if output_path:
-            # After sending the file, we should clean it up
-            try:
+            if output_path:
                 return send_file(output_path, as_attachment=True)
-            finally:
-                if os.path.exists(output_path):
-                    os.remove(output_path)
+            
+            # If we get here, something unexpected happened.
+            return render_template('index.html', message="An unknown error occurred during processing.")
 
-        return render_template('index.html', message="An unknown error occurred during processing.")
+        except Exception as e:
+            # Generic catch-all for truly unexpected errors
+            print(f"An unexpected error occurred in the main block: {e}") # Log it!
+            return render_template('index.html', message="An unexpected server error occurred. The issue has been logged.")
+        
+        finally:
+            # --- 3. Cleanup ---
+            # Clean up the uploaded and generated files regardless of success or failure
+            if filepath and os.path.exists(filepath):
+                os.remove(filepath)
+            if output_path and os.path.exists(output_path):
+                os.remove(output_path)
 
     return render_template('index.html', message="")
