@@ -179,15 +179,6 @@
         .get-token-button:hover {
             background-color: #0099d4;
         }
-        .disclaimer {
-            font-size: 12px;
-            color: #666;
-            max-width: 350px;
-            text-align: center;
-            line-height: 1.4;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 400;
-        }
 
         /* Message area for feedback */
         .message-area {
@@ -216,6 +207,27 @@
             text-align: center;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
+
+        /* Footer Styles */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #D0D0D0;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            width: 100%;
+            max-width: 400px;
+        }
+        .footer a {
+            color: #666;
+            text-decoration: none;
+            margin: 0 8px;
+            font-weight: 400;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -227,7 +239,7 @@
             <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
 
             <p class="step-label">Step 2: Upload Your .brushset File</p>
-            <div class="upload-area" onclick="document.getElementById('brush_file').click();">
+            <div class="upload-area" onclick="document.getElementById(\'brush_file\').click();">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -241,12 +253,12 @@
             <div class="file-name" id="fileName"></div>
 
             {% if message %}
-            <div class="message-area {{ 'message-error' if 'Error' in message else 'message-info' }}">
+            <div class="message-area {{ \'message-error\' if \'Error\' in message else \'message-info\' }}">
                 {{ message }}
             </div>
             {% else %}
             <div class="message-area message-info">
-                This tool extracts stamp images, not complex brush textures. Max file size: 50 MB.
+                This tool extracts stamp images, not complex brush textures.
             </div>
             {% endif %}
 
@@ -256,87 +268,94 @@
     </div>
 
     <div class="get-token-section">
-        <p>Haven't got your etsy order ID yet?</p>
+        <p>Haven\\\'t got your etsy order ID yet?</p>
         <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="get-token-button">Get Token Here</a>
-        <p class="disclaimer">Disclaimer: This tool is for extracting Procreate stamp/shape images only, NOT complex brush textures.</p>
     </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 PresentAndCherish. All rights reserved.</p>
+        <p>
+            <a href="#">Privacy Policy</a> |
+            <a href="#">Terms of Service</a>
+        </p>
+    </footer>
 
     <script>
         // File upload handling
-        const fileInput = document.getElementById('brush_file');
-        const fileName = document.getElementById('fileName');
-        const submitBtn = document.getElementById('submitBtn');
-        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById(\'brush_file\' );
+        const fileName = document.getElementById(\'fileName\');
+        const submitBtn = document.getElementById(\'submitBtn\');
+        const uploadForm = document.getElementById(\'uploadForm\');
 
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener(\'change\', function(e) {
             const file = e.target.files[0];
             if (file) {
                 fileName.textContent = `Selected: ${file.name}`;
                 
                 // Check file extension
-                if (!file.name.toLowerCase().endsWith('.brushset')) {
-                    fileName.textContent = 'Error: Please select a .brushset file';
-                    fileName.style.color = '#721c24';
+                if (!file.name.toLowerCase().endsWith(\'\.brushset\')) {
+                    fileName.textContent = \'Error: Please select a .brushset file\';
+                    fileName.style.color = \'#721c24\';
                     submitBtn.disabled = true;
                 } else {
-                    fileName.style.color = '#666';
+                    fileName.style.color = \'#666\';
                     submitBtn.disabled = false;
                 }
             } else {
-                fileName.textContent = '';
+                fileName.textContent = \'\';
                 submitBtn.disabled = false;
             }
         });
 
         // Form submission handling
-        uploadForm.addEventListener('submit', function(e) {
-            const orderIdInput = document.getElementById('order_id');
-            const fileInput = document.getElementById('brush_file');
+        uploadForm.addEventListener(\'submit\', function(e) {
+            const orderIdInput = document.getElementById(\'order_id\');
+            const fileInput = document.getElementById(\'brush_file\');
             
             if (!orderIdInput.value.trim()) {
                 e.preventDefault();
-                alert('Please enter your Etsy Order ID');
+                alert(\'Please enter your Etsy Order ID\');
                 return;
             }
             
             if (!fileInput.files[0]) {
                 e.preventDefault();
-                alert('Please select a .brushset file');
+                alert(\'Please select a .brushset file\');
                 return;
             }
             
-            if (!fileInput.files[0].name.toLowerCase().endsWith('.brushset')) {
+            if (!fileInput.files[0].name.toLowerCase().endsWith(\'\.brushset\')) {
                 e.preventDefault();
-                alert('Please select a valid .brushset file');
+                alert(\'Please select a valid .brushset file\');
                 return;
             }
             
             // Show loading state
-            submitBtn.textContent = 'Converting...';
+            submitBtn.textContent = \'Converting...\';
             submitBtn.disabled = true;
         });
 
         // Drag and drop functionality
-        const uploadArea = document.querySelector('.upload-area');
+        const uploadArea = document.querySelector(\'.upload-area\');
         
-        uploadArea.addEventListener('dragover', function(e) {
+        uploadArea.addEventListener(\'dragover\', function(e) {
             e.preventDefault();
-            uploadArea.style.borderColor = '#999';
+            uploadArea.style.borderColor = \'#999\';
         });
         
-        uploadArea.addEventListener('dragleave', function(e) {
+        uploadArea.addEventListener(\'dragleave\', function(e) {
             e.preventDefault();
-            uploadArea.style.borderColor = '#D0D0D0';
+            uploadArea.style.borderColor = \'#D0D0D0\';
         });
         
-        uploadArea.addEventListener('drop', function(e) {
+        uploadArea.addEventListener(\'drop\', function(e) {
             e.preventDefault();
-            uploadArea.style.borderColor = '#D0D0D0';
+            uploadArea.style.borderColor = \'#D0D0D0\';
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
-                fileInput.dispatchEvent(new Event('change'));
+                fileInput.dispatchEvent(new Event(\'change\'));
             }
         });
     </script>
