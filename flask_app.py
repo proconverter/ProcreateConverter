@@ -2,7 +2,6 @@ import os
 import requests
 import zipfile
 import shutil
-import json
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -15,11 +14,16 @@ ETSY_SHOP_ID = "PresentAndCherish"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function (REVISED WITH OLD, ROBUST LOGIC) ---
+# --- Helper Function (WITH ISOLATED FOLDERS) ---
 def process_brushset(filepath, make_transparent=False):
+    # --- CRITICAL FIX: Create unique folders for each file ---
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
     temp_output_dir = os.path.join(UPLOAD_FOLDER, f"output_{base_filename}")
+    
+    # Ensure directories are clean before use
+    if os.path.exists(temp_extract_dir): shutil.rmtree(temp_extract_dir)
+    if os.path.exists(temp_output_dir): shutil.rmtree(temp_output_dir)
     os.makedirs(temp_extract_dir, exist_ok=True)
     os.makedirs(temp_output_dir, exist_ok=True)
 
@@ -27,8 +31,6 @@ def process_brushset(filepath, make_transparent=False):
         with zipfile.ZipFile(filepath, 'r') as brushset_zip:
             brushset_zip.extractall(temp_extract_dir)
 
-        # This is the successful "brute-force" logic from your old file.
-        # It tries to open everything and keeps what works and is large enough.
         extracted_images = []
         for root, dirs, files in os.walk(temp_extract_dir):
             for name in files:
@@ -36,18 +38,14 @@ def process_brushset(filepath, make_transparent=False):
                 try:
                     with Image.open(img_path) as img:
                         width, height = img.size
-                        # Apply the size filter
                         if width >= 1024 and height >= 1024:
                             extracted_images.append(img_path)
                 except (IOError, SyntaxError):
-                    # This is expected for non-image files. Ignore and continue.
                     continue
         
         if not extracted_images:
             return None, "Error: No brushes larger than 1024x1024 were found."
 
-        # Now, process the successfully filtered images
-        final_image_paths = []
         for i, img_path in enumerate(extracted_images):
             with Image.open(img_path) as img:
                 final_image = img
@@ -56,12 +54,11 @@ def process_brushset(filepath, make_transparent=False):
                     transparent_img.putalpha(img)
                     final_image = transparent_img
                 
-                # Name the files sequentially as requested
                 output_filename = f"brush_{i + 1}.png"
                 output_image_path = os.path.join(temp_output_dir, output_filename)
                 final_image.save(output_image_path, 'PNG')
-                final_image_paths.append(output_image_path)
 
+        # Return the unique output directory for this specific file
         return temp_output_dir, None
 
     except zipfile.BadZipFile:
@@ -70,6 +67,7 @@ def process_brushset(filepath, make_transparent=False):
         print(f"An unexpected error occurred in process_brushset: {e}")
         return None, "An unexpected server error occurred while processing the brush file."
     finally:
+        # This function's temporary extraction folder is cleaned up by the main route
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
 
@@ -125,7 +123,6 @@ def home():
                         error_messages.append(f"{filename}: {error_message}")
                     elif output_folder:
                         temp_folders_to_clean.append(output_folder)
-                        # Sort the output files to ensure consistent naming (brush_1, brush_2, etc.)
                         png_files = [os.path.join(output_folder, f) for f in sorted(os.listdir(output_folder)) if f.endswith('.png')]
                         processed_data[filename.replace('.brushset', '')] = png_files
                 else:
