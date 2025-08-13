@@ -2,6 +2,7 @@ import os
 import requests
 import zipfile
 import shutil
+import json
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 from PIL import Image
@@ -14,7 +15,7 @@ ETSY_SHOP_ID = "PresentAndCherish"
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function (REVISED) ---
+# --- Helper Function (REVISED WITH OLD, ROBUST LOGIC) ---
 def process_brushset(filepath, make_transparent=False):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
@@ -26,46 +27,53 @@ def process_brushset(filepath, make_transparent=False):
         with zipfile.ZipFile(filepath, 'r') as brushset_zip:
             brushset_zip.extractall(temp_extract_dir)
 
-            final_image_paths = []
-            for root, dirs, files in os.walk(temp_extract_dir):
-                for name in files:
-                    img_path = os.path.join(root, name)
-                    try:
-                        with Image.open(img_path) as img:
-                            width, height = img.size
-                            
-                            # Filter for images larger than 1024x1024
-                            if width >= 1024 and height >= 1024:
-                                final_image = img
-                                
-                                if make_transparent and img.mode == 'L':
-                                    transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
-                                    transparent_img.putalpha(img)
-                                    final_image = transparent_img
-                                
-                                output_image_path = os.path.join(temp_output_dir, f"stamp_{name}.png")
-                                final_image.save(output_image_path, 'PNG')
-                                final_image_paths.append(output_image_path)
+        # This is the successful "brute-force" logic from your old file.
+        # It tries to open everything and keeps what works and is large enough.
+        extracted_images = []
+        for root, dirs, files in os.walk(temp_extract_dir):
+            for name in files:
+                img_path = os.path.join(root, name)
+                try:
+                    with Image.open(img_path) as img:
+                        width, height = img.size
+                        # Apply the size filter
+                        if width >= 1024 and height >= 1024:
+                            extracted_images.append(img_path)
+                except (IOError, SyntaxError):
+                    # This is expected for non-image files. Ignore and continue.
+                    continue
+        
+        if not extracted_images:
+            return None, "Error: No brushes larger than 1024x1024 were found."
 
-                    except (IOError, SyntaxError):
-                        # This is expected for non-image files. Ignore and continue.
-                        continue
-
-        if not final_image_paths:
-            return None, "Error: No valid brushes larger than 1024x1024 were found."
+        # Now, process the successfully filtered images
+        final_image_paths = []
+        for i, img_path in enumerate(extracted_images):
+            with Image.open(img_path) as img:
+                final_image = img
+                if make_transparent and img.mode == 'L':
+                    transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
+                    transparent_img.putalpha(img)
+                    final_image = transparent_img
+                
+                # Name the files sequentially as requested
+                output_filename = f"brush_{i + 1}.png"
+                output_image_path = os.path.join(temp_output_dir, output_filename)
+                final_image.save(output_image_path, 'PNG')
+                final_image_paths.append(output_image_path)
 
         return temp_output_dir, None
 
     except zipfile.BadZipFile:
         return None, "Error: The uploaded file is not a valid .brushset (corrupt zip)."
     except Exception as e:
-        print(f"Error during brushset processing: {str(e)}")
-        return None, "An unexpected error occurred while processing the brush file."
+        print(f"An unexpected error occurred in process_brushset: {e}")
+        return None, "An unexpected server error occurred while processing the brush file."
     finally:
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
 
-# --- Main Application Route ---
+# --- Main Application Route (No changes needed here, but included for completeness) ---
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
@@ -117,7 +125,8 @@ def home():
                         error_messages.append(f"{filename}: {error_message}")
                     elif output_folder:
                         temp_folders_to_clean.append(output_folder)
-                        png_files = [os.path.join(output_folder, f) for f in os.listdir(output_folder) if f.endswith('.png')]
+                        # Sort the output files to ensure consistent naming (brush_1, brush_2, etc.)
+                        png_files = [os.path.join(output_folder, f) for f in sorted(os.listdir(output_folder)) if f.endswith('.png')]
                         processed_data[filename.replace('.brushset', '')] = png_files
                 else:
                     error_messages.append(f"{uploaded_file.filename or 'Unknown file'}: Invalid file type.")
@@ -134,7 +143,7 @@ def home():
 
             with zipfile.ZipFile(final_zip_path, 'w') as final_zip:
                 for brushset_name, png_paths in processed_data.items():
-                    for i, png_path in enumerate(png_paths):
+                    for png_path in png_paths:
                         arcname = os.path.join(brushset_name, os.path.basename(png_path))
                         final_zip.write(png_path, arcname)
             
