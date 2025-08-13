@@ -253,8 +253,7 @@
             <div class="file-name" id="fileName"></div>
 
             {% if message %}
-            <div class="message-area {{ \'message-error\' if \'Error\' in message else \'message-info\' }}">
-                {{ message }}
+            <div class="message-area {{ 'message-error' if 'Error' in message else 'message-info' }}">
             </div>
             {% else %}
             <div class="message-area message-info">
