@@ -30,7 +30,6 @@
             line-height: 1.2;
         }
 
-        /* Mobile responsive title */
         @media (max-width: 480px) {
             .main-title {
                 font-size: 16px;
@@ -76,18 +75,9 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        /* File input styling */
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 2px dashed #D0D0D0;
-            border-radius: 16px;
-            box-sizing: border-box;
-            background-color: transparent;
-            color: #666;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            margin-bottom: 20px;
+        /* New label style for the upload area */
+        .upload-area-label {
+            display: block;
             cursor: pointer;
         }
 
@@ -97,7 +87,6 @@
             padding: 30px;
             text-align: center;
             margin-bottom: 20px;
-            cursor: pointer;
             transition: border-color 0.2s ease;
         }
         .upload-area:hover {
@@ -105,13 +94,6 @@
         }
         .upload-area svg {
             margin-bottom: 12px;
-        }
-        .upload-area a {
-            color: #000;
-            font-weight: 500;
-            text-decoration: underline;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            cursor: pointer;
         }
         .upload-area p {
             color: #666;
@@ -180,7 +162,6 @@
             background-color: #0099d4;
         }
 
-        /* Message area for feedback */
         .message-area {
             padding: 12px;
             margin-bottom: 20px;
@@ -189,6 +170,7 @@
             font-size: 14px;
             font-weight: 400;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            display: none; /* Hide by default */
         }
         .message-info {
             background-color: #e2e3e5;
@@ -199,7 +181,6 @@
             color: #721c24;
         }
 
-        /* File name display */
         .file-name {
             margin-top: 10px;
             font-size: 14px;
@@ -208,7 +189,6 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        /* Footer Styles */
         .footer {
             margin-top: 40px;
             padding-top: 20px;
@@ -239,27 +219,28 @@
             <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
 
             <p class="step-label">Step 2: Upload Your .brushset File</p>
-            <div class="upload-area" onclick="document.getElementById(\'brush_file\').click();">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                <p>Maximum file size 50 MB.</p>
-            </div>
+            
+            <!-- FIX 1: Use a <label> to wrap the clickable area -->
+            <label for="brush_file" class="upload-area-label">
+                <div class="upload-area">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
+                    <p>Maximum file size 50 MB.</p>
+                </div>
+            </label>
+            
+            <!-- The file input is now correctly associated with the label -->
             <input type="file" id="brush_file" name="brush_file" accept=".brushset" required style="display: none;">
             <div class="file-name" id="fileName"></div>
 
-            {% if message %}
-            <div class="message-area {{ 'message-error' if 'Error' in message else 'message-info' }}">
-            </div>
-            {% else %}
-            <div class="message-area message-info">
+            <div class="message-area message-info" style="display: block;">
                 This tool extracts stamp images, not complex brush textures.
             </div>
-            {% endif %}
 
             <p class="upload-requirement">Upload Requirement: Must be a valid Procreate .brushset file.</p>
             <button type="submit" class="submit-button" id="submitBtn">Convert Your Brushset</button>
@@ -267,7 +248,7 @@
     </div>
 
     <div class="get-token-section">
-        <p>Haven\\\'t got your etsy order ID yet?</p>
+        <p>Haven't got your etsy order ID yet?</p>
         <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="get-token-button">Get Token Here</a>
     </div>
 
@@ -279,146 +260,121 @@
         </p>
     </footer>
 
-<script>
-    // Get references to the DOM elements
-    const fileInput = document.getElementById('brush_file');
-    const fileNameDisplay = document.getElementById('fileName');
-    const submitBtn = document.getElementById('submitBtn');
-    const uploadForm = document.getElementById('uploadForm');
-    const uploadArea = document.querySelector('.upload-area');
-    const messageArea = document.querySelector('.message-area'); // Get the message area
+    <!-- FIX 2: Replaced entire script with asynchronous fetch logic -->
+    <script>
+        const fileInput = document.getElementById('brush_file' );
+        const fileNameDisplay = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadArea = document.querySelector('.upload-area');
+        const messageArea = document.querySelector('.message-area');
 
-    // Function to show error messages
-    function showMessage(text, isError = false) {
-        messageArea.textContent = text;
-        if (isError) {
-            messageArea.className = 'message-area message-error';
-        } else {
-            messageArea.className = 'message-area message-info';
-        }
-        messageArea.style.display = 'block'; // Make sure it's visible
-    }
-
-    // --- Event Listeners ---
-
-    // 1. Listen for file selection
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (!file.name.toLowerCase().endsWith('.brushset')) {
-                fileNameDisplay.textContent = 'Error: Please select a .brushset file';
-                fileNameDisplay.style.color = '#721c24'; // Red color for error
-                submitBtn.disabled = true;
-            } else {
-                fileNameDisplay.textContent = `Selected: ${file.name}`;
-                fileNameDisplay.style.color = '#666'; // Default color
-                submitBtn.disabled = false;
-            }
-        }
-    });
-
-    // 2. Listen for form submission
-    uploadForm.addEventListener('submit', function(e) {
-        // PREVENT the default browser page-reload behavior
-        e.preventDefault();
-
-        // --- Client-side validation ---
-        const orderIdInput = document.getElementById('order_id');
-        if (!orderIdInput.value.trim()) {
-            showMessage('Error: Please enter your Etsy Order ID.', true);
-            return;
-        }
-        if (!fileInput.files[0]) {
-            showMessage('Error: Please select a .brushset file to upload.', true);
-            return;
+        function showMessage(text, isError = false) {
+            messageArea.textContent = text;
+            messageArea.className = isError ? 'message-area message-error' : 'message-area message-info';
+            messageArea.style.display = 'block';
         }
 
-        // --- Start the upload process ---
-        submitBtn.textContent = 'Converting...';
-        submitBtn.disabled = true;
-        showMessage('Your file is being processed. Please wait.', false);
-
-        // Create a FormData object to send the file
-        const formData = new FormData(uploadForm);
-
-        // Use the Fetch API to send the data to the Flask backend
-        fetch('/', { // Submitting to the root URL
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => {
-            // Check if the response from the server is OK and is a zip file
-            if (response.ok && response.headers.get("Content-Type") === "application/zip") {
-                // Get the filename from the Content-Disposition header if available
-                const disposition = response.headers.get('Content-Disposition');
-                let filename = 'converted_brushes.zip'; // A default filename
-                if (disposition && disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(disposition);
-                    if (matches != null && matches[1]) {
-                        filename = matches[1].replace(/['"]/g, '');
-                    }
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.name.toLowerCase().endsWith('.brushset')) {
+                    fileNameDisplay.textContent = 'Error: Please select a .brushset file';
+                    fileNameDisplay.style.color = '#721c24';
+                    submitBtn.disabled = true;
+                } else {
+                    fileNameDisplay.textContent = `Selected: ${file.name}`;
+                    fileNameDisplay.style.color = '#666';
+                    submitBtn.disabled = false;
                 }
-                return response.blob().then(blob => ({ blob, filename }));
-            } else {
-                // If it's not a file, it's probably an error message (HTML page)
-                // We read the text to display the error from the template
-                return response.text().then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, "text/html");
-                    const errorMessage = doc.querySelector('.message-area').textContent;
-                    throw new Error(errorMessage || 'An unknown error occurred.');
-                });
             }
-        })
-        .then(({ blob, filename }) => {
-            // --- Success: Trigger the file download ---
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename; // Use the server-provided filename
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            
-            // Reset the UI
-            submitBtn.textContent = 'Convert Your Brushset';
-            submitBtn.disabled = false;
-            showMessage('Conversion successful! Your download has started.', false);
-        })
-        .catch(error => {
-            // --- Failure: Display the error message ---
-            console.error('Upload failed:', error);
-            showMessage(error.message, true);
-            
-            // Reset the UI
-            submitBtn.textContent = 'Convert Your Brushset';
-            submitBtn.disabled = false;
         });
-    });
 
-    // 3. Drag and drop functionality (your existing code is great)
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#999';
-    });
-    uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#D0D0D0';
-    });
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.style.borderColor = '#D0D0D0';
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            // Trigger the 'change' event manually to update the UI
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-</script>
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
+            const orderIdInput = document.getElementById('order_id');
+            if (!orderIdInput.value.trim()) {
+                showMessage('Error: Please enter your Etsy Order ID.', true);
+                return;
+            }
+            if (!fileInput.files[0]) {
+                showMessage('Error: Please select a .brushset file to upload.', true);
+                return;
+            }
+
+            submitBtn.textContent = 'Converting...';
+            submitBtn.disabled = true;
+            showMessage('Your file is being processed. Please wait.', false);
+
+            const formData = new FormData(uploadForm);
+
+            fetch('/', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                if (response.ok && response.headers.get("Content-Type") === "application/zip") {
+                    const disposition = response.headers.get('Content-Disposition');
+                    let filename = 'converted_brushes.zip';
+                    if (disposition && disposition.includes('attachment')) {
+                        const filenameMatch = /filename="([^"]+)"/.exec(disposition);
+                        if (filenameMatch && filenameMatch[1]) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+                    return response.blob().then(blob => ({ blob, filename }));
+                } else {
+                    return response.text().then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, "text/html");
+                        const errorElement = doc.querySelector('.message-area.message-error');
+                        const errorMessage = errorElement ? errorElement.textContent.trim() : 'An unknown error occurred during processing.';
+                        throw new Error(errorMessage);
+                    });
+                }
+            })
+            .then(({ blob, filename }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+                submitBtn.textContent = 'Convert Your Brushset';
+                submitBtn.disabled = false;
+                showMessage('Conversion successful! Your download has started.', false);
+            })
+            .catch(error => {
+                console.error('Upload failed:', error);
+                showMessage(error.message, true);
+                submitBtn.textContent = 'Convert Your Brushset';
+                submitBtn.disabled = false;
+            });
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#999';
+        });
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#D0D0D0';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#D0D0D0';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
 
 </body>
 </html>
