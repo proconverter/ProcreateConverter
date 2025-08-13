@@ -111,7 +111,6 @@
             font-weight: 400;
         }
 
-        /* NEW: Styles for the options section */
         .options-section {
             margin-bottom: 20px;
             padding: 10px;
@@ -191,7 +190,7 @@
             font-size: 14px;
             font-weight: 400;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            display: none; /* Hide by default */
+            display: none; 
         }
         .message-info {
             background-color: #e2e3e5;
@@ -239,6 +238,7 @@
             white-space: nowrap;
         }
         .status-ready { color: #3a7c3e; background-color: #e2efd8; }
+        .status-pending { color: #666; background-color: #f0f0f0; }
         .status-processing { color: #7a5a00; background-color: #fff4d5; }
         .status-completed { color: #005a9e; background-color: #dceaf5; }
         .status-error { color: #721c24; background-color: #f8d7da; }
@@ -277,7 +277,7 @@
     <h1 class="main-title">CONVERT YOUR PROCREATE BRUSHSET</h1>
 
     <div class="converter-card">
-        <form method="post" enctype="multipart/form-data" id="uploadForm">
+        <form id="uploadForm">
             <p class="step-label">Step 1: Enter Your Etsy Order Id.</p>
             <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
 
@@ -305,7 +305,6 @@
 
             <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset file(s ).</p>
 
-            <!-- NEW: Optional Transparency Checkbox -->
             <div class="options-section">
                 <label for="make_transparent">
                     <input type="checkbox" id="make_transparent" name="make_transparent" value="true">
@@ -367,14 +366,12 @@
             messageArea.style.display = 'block';
         }
 
-        function updateFileListStatus(status, statusClass) {
-            const statusElements = fileNameDisplay.querySelectorAll('.file-item-status');
-            statusElements.forEach(el => {
-                if (!el.classList.contains('status-error')) { // Don't override invalid file status
-                    el.textContent = status;
-                    el.className = `file-item-status ${statusClass}`;
-                }
-            });
+        function updateFileStatus(fileIdentifier, status, statusClass) {
+            const statusElement = document.querySelector(`[data-file-id="${fileIdentifier}"] .file-item-status`);
+            if (statusElement) {
+                statusElement.textContent = status;
+                statusElement.className = `file-item-status ${statusClass}`;
+            }
         }
 
         function handleFiles(files) {
@@ -394,13 +391,15 @@
 
             let fileListHtml = '<ul>';
             let allFilesValid = true;
-            for (const file of files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileId = `${file.name}-${file.lastModified}`;
                 const isValid = file.name.toLowerCase().endsWith('.brushset');
                 const statusText = isValid ? 'Ready' : 'Invalid';
                 const statusClass = isValid ? 'status-ready' : 'status-error';
                 
                 fileListHtml += `
-                    <li>
+                    <li data-file-id="${fileId}">
                         <span class="file-item-name">${file.name}</span>
                         <span class="file-item-status ${statusClass}">${statusText}</span>
                     </li>`;
@@ -420,90 +419,90 @@
         }
 
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#999'; });
+        uploadArea.addEventListener('dragleave', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#D0D0D0'; });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#D0D0D0';
+            fileInput.files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        });
 
-        uploadForm.addEventListener('submit', function(e) {
+        uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const orderIdInput = document.getElementById('order_id');
+            const makeTransparent = document.getElementById('make_transparent').checked;
+            const filesToProcess = Array.from(fileInput.files);
+
             if (!orderIdInput.value.trim()) {
                 showMessage('Error: Please enter your Etsy Order ID.', true);
                 return;
             }
-            if (fileInput.files.length === 0) {
+            if (filesToProcess.length === 0) {
                 showMessage('Error: Please select one or more .brushset files.', true);
                 return;
             }
 
             submitBtn.textContent = 'Converting...';
             submitBtn.disabled = true;
-            showMessage('Your files are being processed. Please wait.', false);
-            updateFileListStatus('Processing...', 'status-processing');
+            showMessage('Starting conversion process...', false);
 
-            const formData = new FormData(uploadForm);
-
-            fetch('/', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-                if (response.ok && response.headers.get("Content-Type") === "application/zip") {
-                    const disposition = response.headers.get('Content-Disposition');
-                    let filename = 'converted_brushes.zip';
-                    if (disposition && disposition.includes('attachment')) {
-                        const filenameMatch = /filename="([^"]+)"/.exec(disposition);
-                        if (filenameMatch && filenameMatch[1]) {
-                            filename = filenameMatch[1];
-                        }
-                    }
-                    return response.blob().then(blob => ({ blob, filename }));
-                } else {
-                    return response.text().then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, "text/html");
-                        const errorElement = doc.querySelector('.message-area');
-                        const errorMessage = errorElement ? errorElement.textContent.trim() : 'An unknown error occurred during processing.';
-                        throw new Error(errorMessage);
-                    });
-                }
-            })
-            .then(({ blob, filename }) => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-
-                submitBtn.textContent = 'Convert Your Brushset';
-                submitBtn.disabled = false;
-                showMessage('Conversion successful! Your download has started.', false);
-                updateFileListStatus('Completed', 'status-completed');
-            })
-            .catch(error => {
-                console.error('Upload failed:', error);
-                showMessage(error.message, true);
-                submitBtn.textContent = 'Convert Your Brushset';
-                submitBtn.disabled = false;
-                updateFileListStatus('Error', 'status-error');
+            // Set all non-processed files to "Pending"
+            filesToProcess.forEach(file => {
+                const fileId = `${file.name}-${file.lastModified}`;
+                updateFileStatus(fileId, 'Pending', 'status-pending');
             });
-        });
 
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#999';
-        });
-        uploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#D0D0D0';
-        });
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#D0D0D0';
-            fileInput.files = e.dataTransfer.files;
-            handleFiles(e.dataTransfer.files);
+            for (let i = 0; i < filesToProcess.length; i++) {
+                const file = filesToProcess[i];
+                const fileId = `${file.name}-${file.lastModified}`;
+                updateFileStatus(fileId, 'Processing...', 'status-processing');
+
+                const formData = new FormData();
+                formData.append('order_id', orderIdInput.value.trim());
+                formData.append('make_transparent', makeTransparent);
+                formData.append('brush_file', file);
+                formData.append('file_index', i);
+                formData.append('total_files', filesToProcess.length);
+
+                try {
+                    const response = await fetch('/convert-single', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.message || 'An unknown error occurred.');
+                    }
+
+                    updateFileStatus(fileId, 'Completed', 'status-completed');
+
+                    if (result.download_url) {
+                        showMessage('All files converted! Your download will begin shortly.', false);
+                        // Use a link for the user to click, or redirect automatically
+                        const a = document.createElement('a');
+                        a.href = result.download_url;
+                        a.download = ''; // Browser will use filename from Content-Disposition
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    }
+
+                } catch (error) {
+                    console.error('Processing failed for', file.name, ':', error);
+                    updateFileStatus(fileId, 'Error', 'status-error');
+                    showMessage(`Error processing ${file.name}: ${error.message}`, true);
+                    submitBtn.textContent = 'Convert Your Brushset';
+                    submitBtn.disabled = false;
+                    return; 
+                }
+            }
+
+            submitBtn.textContent = 'Convert Your Brushset';
+            submitBtn.disabled = false;
         });
     </script>
 
