@@ -75,7 +75,6 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        /* New label style for the upload area */
         .upload-area-label {
             display: block;
             cursor: pointer;
@@ -208,6 +207,67 @@
         .footer a:hover {
             text-decoration: underline;
         }
+        
+        /* --- MODAL STYLES --- */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* Black with opacity */
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 25px;
+            border: 1px solid #888;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .modal-content h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 0;
+        }
+        .modal-content h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 20px;
+            margin-bottom: 5px;
+        }
+        .modal-content p {
+            margin-bottom: 10px;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        @keyframes fadeIn {
+            from {opacity: 0}
+            to {opacity: 1}
+        }
     </style>
 </head>
 <body>
@@ -220,7 +280,6 @@
 
             <p class="step-label">Step 2: Upload Your .brushset File</p>
             
-            <!-- FIX 1: Use a <label> to wrap the clickable area -->
             <label for="brush_file" class="upload-area-label">
                 <div class="upload-area">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -234,7 +293,6 @@
                 </div>
             </label>
             
-            <!-- The file input is now correctly associated with the label -->
             <input type="file" id="brush_file" name="brush_file" accept=".brushset" required style="display: none;">
             <div class="file-name" id="fileName"></div>
 
@@ -253,16 +311,54 @@
     </div>
 
     <footer class="footer">
-        <p>&copy; 2025 PresentAndCherish. All rights reserved.</p>
         <p>
-            <a href="#">Privacy Policy</a> |
-            <a href="#">Terms of Service</a>
+            <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" style="text-decoration: none; color: inherit;">
+                &copy; 2025 PresentAndCherish. All rights reserved.
+            </a>
+        </p>
+        <p>
+            <!-- MODIFIED: Links now call the openModal( ) function -->
+            <a href="javascript:void(0);" onclick="openModal()">Privacy Policy</a> |
+            <a href="javascript:void(0);" onclick="openModal()">Terms of Service</a>
         </p>
     </footer>
 
-    <!-- FIX 2: Replaced entire script with asynchronous fetch logic -->
+    <!-- MODAL HTML STRUCTURE -->
+    <div id="policyModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2>Privacy Policy & Terms of Service</h2>
+            <p><strong>Effective Date:</strong> 13 August 2025</p>
+            
+            <h3>Privacy Policy</h3>
+            <p>PresentAndCherish (“we,” “our,” or “us”) collects your Etsy Order ID and email address only to verify your purchase and send your converted Procreate brushset PNG files. This data is processed via our Etsy integration and not used for marketing. We store it only as long as needed to complete your order, then delete it. We never sell or share your details except if required by law. For questions, contact Hope, Owner of PresentAndCherish store on Etsy.</p>
+
+            <h3>Terms of Service</h3>
+            <p>By using this site, you confirm that you are the rightful purchaser of the product and agree to provide accurate Etsy Order ID and email details. File delivery depends on correct information being entered. We are not responsible for delays, failed deliveries, or compatibility issues caused by user error or technical problems beyond our control. These terms may be updated at any time without notice.</p>
+        </div>
+    </div>
+
     <script>
-        const fileInput = document.getElementById('brush_file' );
+        // --- MODAL JAVASCRIPT ---
+        const modal = document.getElementById('policyModal');
+
+        function openModal() {
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        // Close the modal if the user clicks anywhere outside of the modal content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // --- FORM AND UPLOAD JAVASCRIPT ---
+        const fileInput = document.getElementById('brush_file');
         const fileNameDisplay = document.getElementById('fileName');
         const submitBtn = document.getElementById('submitBtn');
         const uploadForm = document.getElementById('uploadForm');
