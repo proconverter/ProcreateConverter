@@ -17,9 +17,8 @@ MIN_IMAGE_DIMENSION = 500
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function: The Final, Memory-Safe Conversion Engine ---
-# NO CHANGES NEEDED IN THIS FUNCTION
-def process_brushset(filepath):
+# --- Helper Function (UPDATED) ---
+def process_brushset(filepath, make_transparent=False):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
     temp_output_dir = os.path.join(UPLOAD_FOLDER, f"output_{base_filename}")
@@ -42,7 +41,9 @@ def process_brushset(filepath):
                             width, height = img.size
                             if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
                                 final_image = img
-                                if img.mode == 'L':
+                                
+                                # --- CRITICAL CHANGE: Only convert if requested ---
+                                if make_transparent and img.mode == 'L':
                                     transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
                                     transparent_img.putalpha(img)
                                     final_image = transparent_img
@@ -56,7 +57,6 @@ def process_brushset(filepath):
         if not final_image_paths:
             return None, "Error: No valid brushes found in the file (images might be too small)."
 
-        # This function now returns the path to the FOLDER of PNGs
         return temp_output_dir, None
 
     except zipfile.BadZipFile:
@@ -67,44 +67,46 @@ def process_brushset(filepath):
     finally:
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
-        # IMPORTANT: We do NOT clean up the output dir here anymore, it's cleaned up in the main route
 
-# --- Main Application Route (UPDATED FOR MULTI-FILE) ---
+# --- Main Application Route (UPDATED) ---
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        # --- 1. Etsy API Validation ---
+        # --- 1. Get Form Data ---
+        order_id = request.form.get('order_id')
+        # The checkbox will send 'true' if checked, or nothing if not.
+        make_transparent = request.form.get('make_transparent') == 'true'
+        uploaded_files = request.files.getlist('brush_files')
+
+        # --- 2. Validation ---
         try:
-            order_id = request.form.get('order_id')
             if not order_id or not order_id.strip():
                  return render_template('index.html', message="Error: Please provide a valid Etsy Order ID.")
-
+            
             # --- This is the block to uncomment when you go live ---
             # api_url = f"https://openapi.etsy.com/v3/application/shops/{ETSY_SHOP_ID}/receipts/{order_id.strip( )}"
             # headers = {'x-api-key': ETSY_API_KEY}
             # response = requests.get(api_url, headers=headers, timeout=10)
             # if response.status_code == 404:
-            #     return render_template('index.html', message="Error: This Order ID was not found. Please double-check the number.")
+            #     return render_template('index.html', message="Error: This Order ID was not found.")
             # elif response.status_code != 200:
             #     print(f"Etsy API Error: Status {response.status_code}, Response: {response.text}")
-            #     return render_template('index.html', message="Error: Could not verify the Order ID with Etsy. Please try again later.")
+            #     return render_template('index.html', message="Error: Could not verify the Order ID with Etsy.")
 
         except requests.exceptions.RequestException as e:
             print(f"Etsy API Request Failed: {e}")
-            return render_template('index.html', message="Error: Could not connect to Etsy's servers. Please try again in a few minutes.")
-
-        # --- 2. File Handling and Processing ---
-        uploaded_files = request.files.getlist('brush_files') # Use getlist for multiple files
+            return render_template('index.html', message="Error: Could not connect to Etsy's servers.")
 
         if not uploaded_files or all(f.filename == '' for f in uploaded_files):
             return render_template('index.html', message="Error: You must upload at least one valid .brushset file.")
         if len(uploaded_files) > 10:
             return render_template('index.html', message="Error: You cannot upload more than 10 files at once.")
 
+        # --- 3. File Processing ---
         temp_folders_to_clean = []
         temp_files_to_clean = []
         error_messages = []
-        processed_data = {} # To store {brushset_name: [png_paths]}
+        processed_data = {}
 
         for uploaded_file in uploaded_files:
             if uploaded_file and uploaded_file.filename.lower().endswith('.brushset'):
@@ -115,7 +117,8 @@ def home():
                     uploaded_file.save(filepath)
                     temp_files_to_clean.append(filepath)
                     
-                    output_folder, error_message = process_brushset(filepath)
+                    # Pass the make_transparent flag to the processing function
+                    output_folder, error_message = process_brushset(filepath, make_transparent)
                     
                     if error_message:
                         error_messages.append(f"{filename}: {error_message}")
@@ -130,15 +133,16 @@ def home():
                 error_messages.append(f"{uploaded_file.filename or 'Unknown file'}: Invalid file type.")
 
         if error_messages:
-            # Cleanup before returning error
-            for path in temp_files_to_clean: shutil.rmtree(path, ignore_errors=True) if os.path.isdir(path) else os.remove(path)
-            for path in temp_folders_to_clean: shutil.rmtree(path, ignore_errors=True)
+            for path in temp_files_to_clean:
+                if os.path.exists(path): os.remove(path)
+            for path in temp_folders_to_clean:
+                if os.path.exists(path): shutil.rmtree(path, ignore_errors=True)
             return render_template('index.html', message="; ".join(error_messages))
 
         if not processed_data:
             return render_template('index.html', message="Error: No valid brushes could be processed.")
 
-        # --- 3. Combine all PNGs into a single final ZIP file ---
+        # --- 4. Combine into Final Zip ---
         final_zip_filename = f"Converted_Brushes_{order_id}.zip"
         final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
 
@@ -146,7 +150,6 @@ def home():
             with zipfile.ZipFile(final_zip_path, 'w') as final_zip:
                 for brushset_name, png_paths in processed_data.items():
                     for i, png_path in enumerate(png_paths):
-                        # Create a clean filename inside the zip
                         arcname = os.path.join(brushset_name, f"brush_{i+1}.png")
                         final_zip.write(png_path, arcname)
             
@@ -157,7 +160,7 @@ def home():
             return render_template('index.html', message="Error creating the final combined zip file.")
         
         finally:
-            # --- 4. Final Cleanup ---
+            # --- 5. Final Cleanup ---
             for path in temp_files_to_clean:
                 if os.path.exists(path): os.remove(path)
             for path in temp_folders_to_clean:
@@ -165,4 +168,4 @@ def home():
             if os.path.exists(final_zip_path):
                 os.remove(final_zip_path)
 
-    return render_template('index.html', message="")
+    return render_template('index.html',
