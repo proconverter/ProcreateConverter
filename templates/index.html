@@ -187,6 +187,21 @@
             text-align: center;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
+        /* NEW: Styles for the file list */
+        .file-name ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            font-size: 13px;
+        }
+        .file-name li {
+            background-color: #f7f7f7;
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
 
         .footer {
             margin-top: 40px;
@@ -208,9 +223,8 @@
             text-decoration: underline;
         }
         
-        /* --- MODAL STYLES --- */
         .modal-overlay {
-            display: none; /* Hidden by default */
+            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
@@ -218,7 +232,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.5); /* Black with opacity */
+            background-color: rgba(0,0,0,0.5);
             animation: fadeIn 0.3s;
         }
         .modal-content {
@@ -278,7 +292,7 @@
             <p class="step-label">Step 1: Enter Your Etsy Order Id.</p>
             <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
 
-            <p class="step-label">Step 2: Upload Your .brushset File</p>
+            <p class="step-label">Step 2: Upload Your .brushset File(s)</p>
             
             <label for="brush_file" class="upload-area-label">
                 <div class="upload-area">
@@ -289,19 +303,20 @@
                         <path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <p><span style="color: #000; font-weight: 500; text-decoration: underline;">Click to upload</span> or drag and drop</p>
-                    <p>Maximum file size 50 MB.</p>
+                    <p>Maximum 10 files. Maximum file size 50 MB.</p>
                 </div>
             </label>
             
-            <input type="file" id="brush_file" name="brush_file" accept=".brushset" required style="display: none;">
+            <!-- UPDATED: Added 'multiple' attribute to allow multiple file selection -->
+            <input type="file" id="brush_file" name="brush_files" accept=".brushset" required style="display: none;" multiple>
             <div class="file-name" id="fileName"></div>
 
             <div class="message-area message-info" style="display: block;">
                 This tool extracts stamp images, not complex brush textures.
             </div>
 
-            <p class="upload-requirement">Upload Requirement: Must be a valid Procreate .brushset file.</p>
-            <button type="submit" class="submit-button" id="submitBtn">Convert Your Brushset</button>
+            <p class="upload-requirement">Upload Requirement: Must be valid Procreate .brushset file(s ).</p>
+            <button type="submit" class="submit-button" id="submitBtn" disabled>Convert Your Brushset</button>
         </form>
     </div>
 
@@ -321,41 +336,27 @@
         </p>
     </footer>
 
-    <!-- MODAL HTML STRUCTURE -->
     <div id="policyModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
-            <h2>Terms & Privacy</h2>
+            <h2>Privacy Policy & Terms of Service</h2>
             <p><strong>Effective Date:</strong> 13 August 2025</p>
-            
             <h3>Privacy Policy</h3>
-            <p>PresentandCherish (“we,” “our,” or “us”) collects your Etsy Order ID and email address only to verify your purchase and send your converted Procreate brushset PNG files. This data is processed via our Etsy integration and not used for marketing. We store it only as long as needed to complete your order, then delete it. We never sell or share your details except if required by law. For questions, contact Hope at PresentAndCherish.</p>
-
+            <p>PresentandCherish (“we,” “our,” or “us”) collects your Etsy Order ID only to verify your purchase of the associated digital product. This data is processed via our Etsy integration and not used for marketing. We do not store your Order ID after verification. We never sell or share your details except if required by law. For questions, contact Hope at PresentAndCherish.</p>
             <h3>Terms of Service</h3>
-            <p>By using this site, you confirm that you are the rightful purchaser of the product and agree to provide accurate Etsy Order ID and email details. File delivery depends on correct information being entered. We are not responsible for delays, failed deliveries, or compatibility issues caused by user error or technical problems beyond our control. These terms may be updated at any time without notice.</p>
+            <p>By using this site, you confirm that you are the rightful purchaser of the product and agree to provide an accurate Etsy Order ID. File delivery depends on a valid Order ID and compatible .brushset files. We are not responsible for delays, failed deliveries, or compatibility issues caused by user error or technical problems beyond our control. These terms may be updated at any time without notice.</p>
         </div>
     </div>
 
+    <!-- UPDATED: Full script with multi-file logic -->
     <script>
-        // --- MODAL JAVASCRIPT ---
         const modal = document.getElementById('policyModal');
-
-        function openModal() {
-            modal.style.display = "block";
-        }
-
-        function closeModal() {
-            modal.style.display = "none";
-        }
-
-        // Close the modal if the user clicks anywhere outside of the modal content
+        function openModal() { modal.style.display = "block"; }
+        function closeModal() { modal.style.display = "none"; }
         window.onclick = function(event) {
-            if (event.target == modal) {
-                closeModal();
-            }
+            if (event.target == modal) { closeModal(); }
         }
 
-        // --- FORM AND UPLOAD JAVASCRIPT ---
         const fileInput = document.getElementById('brush_file');
         const fileNameDisplay = document.getElementById('fileName');
         const submitBtn = document.getElementById('submitBtn');
@@ -369,20 +370,44 @@
             messageArea.style.display = 'block';
         }
 
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
+        function handleFiles(files) {
+            if (files.length === 0) {
+                fileNameDisplay.innerHTML = '';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            if (files.length > 10) {
+                showMessage('Error: You can upload a maximum of 10 files.', true);
+                fileInput.value = ''; // Clear the selection
+                fileNameDisplay.innerHTML = '';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            let fileListHtml = '<ul>';
+            let allFilesValid = true;
+            for (const file of files) {
                 if (!file.name.toLowerCase().endsWith('.brushset')) {
-                    fileNameDisplay.textContent = 'Error: Please select a .brushset file';
-                    fileNameDisplay.style.color = '#721c24';
-                    submitBtn.disabled = true;
+                    fileListHtml += `<li style="color: #721c24;">${file.name} (Invalid)</li>`;
+                    allFilesValid = false;
                 } else {
-                    fileNameDisplay.textContent = `Selected: ${file.name}`;
-                    fileNameDisplay.style.color = '#666';
-                    submitBtn.disabled = false;
+                    fileListHtml += `<li>${file.name}</li>`;
                 }
             }
-        });
+            fileListHtml += '</ul>';
+            fileNameDisplay.innerHTML = fileListHtml;
+            
+            if (allFilesValid) {
+                submitBtn.disabled = false;
+                messageArea.style.display = 'none'; // Hide previous messages
+            } else {
+                showMessage('Error: One or more files are not valid .brushset files.', true);
+                submitBtn.disabled = true;
+            }
+        }
+
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -392,16 +417,17 @@
                 showMessage('Error: Please enter your Etsy Order ID.', true);
                 return;
             }
-            if (!fileInput.files[0]) {
-                showMessage('Error: Please select a .brushset file to upload.', true);
+            if (fileInput.files.length === 0) {
+                showMessage('Error: Please select one or more .brushset files.', true);
                 return;
             }
 
             submitBtn.textContent = 'Converting...';
             submitBtn.disabled = true;
-            showMessage('Your file is being processed. Please wait.', false);
+            showMessage('Your files are being processed. Please wait.', false);
 
             const formData = new FormData(uploadForm);
+            // The 'name' attribute on the input field handles adding files to FormData
 
             fetch('/', {
                 method: 'POST',
@@ -422,7 +448,7 @@
                     return response.text().then(html => {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, "text/html");
-                        const errorElement = doc.querySelector('.message-area.message-error');
+                        const errorElement = doc.querySelector('.message-area');
                         const errorMessage = errorElement ? errorElement.textContent.trim() : 'An unknown error occurred during processing.';
                         throw new Error(errorMessage);
                     });
@@ -442,6 +468,8 @@
                 submitBtn.textContent = 'Convert Your Brushset';
                 submitBtn.disabled = false;
                 showMessage('Conversion successful! Your download has started.', false);
+                fileInput.value = ''; // Clear file input
+                fileNameDisplay.innerHTML = ''; // Clear file list
             })
             .catch(error => {
                 console.error('Upload failed:', error);
@@ -462,11 +490,8 @@
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#D0D0D0';
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
+            fileInput.files = e.dataTransfer.files; // Assign dropped files to input
+            handleFiles(e.dataTransfer.files); // Process them
         });
     </script>
 
