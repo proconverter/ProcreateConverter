@@ -11,13 +11,10 @@ app = Flask(__name__)
 # --- Configuration ---
 ETSY_API_KEY = os.environ.get('ETSY_API_KEY')
 ETSY_SHOP_ID = "PresentAndCherish"
-MAX_FILE_SIZE = 50 * 1024 * 1024
-MAX_BRUSH_COUNT = 100
-MIN_IMAGE_DIMENSION = 500
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function ---
+# --- Helper Function (REVISED) ---
 def process_brushset(filepath, make_transparent=False):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
@@ -27,19 +24,18 @@ def process_brushset(filepath, make_transparent=False):
 
     try:
         with zipfile.ZipFile(filepath, 'r') as brushset_zip:
-            if len(brushset_zip.namelist()) > MAX_BRUSH_COUNT * 2:
-                return None, "Error: Brush set contains more than 100 brushes."
-
             brushset_zip.extractall(temp_extract_dir)
 
             final_image_paths = []
             for root, dirs, files in os.walk(temp_extract_dir):
                 for name in files:
+                    img_path = os.path.join(root, name)
                     try:
-                        img_path = os.path.join(root, name)
                         with Image.open(img_path) as img:
                             width, height = img.size
-                            if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
+                            
+                            # Filter for images larger than 1024x1024
+                            if width >= 1024 and height >= 1024:
                                 final_image = img
                                 
                                 if make_transparent and img.mode == 'L':
@@ -47,14 +43,16 @@ def process_brushset(filepath, make_transparent=False):
                                     transparent_img.putalpha(img)
                                     final_image = transparent_img
                                 
-                                output_image_path = os.path.join(temp_output_dir, name)
+                                output_image_path = os.path.join(temp_output_dir, f"stamp_{name}.png")
                                 final_image.save(output_image_path, 'PNG')
                                 final_image_paths.append(output_image_path)
-                    except IOError:
+
+                    except (IOError, SyntaxError):
+                        # This is expected for non-image files. Ignore and continue.
                         continue
 
         if not final_image_paths:
-            return None, "Error: No valid brushes found in the file (images might be too small)."
+            return None, "Error: No valid brushes larger than 1024x1024 were found."
 
         return temp_output_dir, None
 
@@ -102,7 +100,7 @@ def home():
         temp_files_to_clean = []
         error_messages = []
         processed_data = {}
-        final_zip_path = "" # Define here to be accessible in finally
+        final_zip_path = ""
 
         try:
             for uploaded_file in uploaded_files:
@@ -125,7 +123,6 @@ def home():
                     error_messages.append(f"{uploaded_file.filename or 'Unknown file'}: Invalid file type.")
 
             if error_messages:
-                # This is now a standard Python list comprehension, which is safe.
                 error_string = "; ".join(error_messages)
                 return render_template('index.html', message=error_string)
 
@@ -138,7 +135,7 @@ def home():
             with zipfile.ZipFile(final_zip_path, 'w') as final_zip:
                 for brushset_name, png_paths in processed_data.items():
                     for i, png_path in enumerate(png_paths):
-                        arcname = os.path.join(brushset_name, f"brush_{i+1}.png")
+                        arcname = os.path.join(brushset_name, os.path.basename(png_path))
                         final_zip.write(png_path, arcname)
             
             return send_file(final_zip_path, as_attachment=True)
@@ -148,7 +145,6 @@ def home():
             return render_template('index.html', message="An unexpected server error occurred.")
         
         finally:
-            # --- CORRECTED CLEANUP BLOCK ---
             for path in temp_files_to_clean:
                 if os.path.exists(path):
                     os.remove(path)
