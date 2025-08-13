@@ -3,87 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Procreate Brush Converter</title>
+    <title>Brushset Converter</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1, h2 { text-align: center; color: #2c3e50; }
-        h1 { font-size: 2.5em; margin-bottom: 10px; }
-        h2 { font-size: 1.8em; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; margin-top: 40px; }
-        p, li { color: #555; font-size: 1.1em; }
-        .cta-button { display: block; width: 80%; margin: 20px auto; padding: 15px; background-color: #3498db; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-size: 1.2em; font-weight: bold; border: none; cursor: pointer; }
-        .cta-button:hover { background-color: #2980b9; }
-        .form-section { background-color: #ecf0f1; padding: 20px; border-radius: 5px; margin-top: 20px; }
-        .form-section label { font-weight: bold; display: block; margin-bottom: 5px; }
-        .form-section input[type="text"], .form-section input[type="file"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 4px; }
-        .requirements { background: #fffbe6; border: 1px solid #ffe58f; padding: 15px; border-radius: 5px; margin-top: 20px; }
-        .requirements ul { list-style-type: '✅ '; padding-left: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        /* --- NEW STYLES FOR THE MESSAGE AREA --- */
-        .message-area { padding: 10px; margin-bottom: 15px; border-radius: 4px; text-align: center; font-weight: bold; }
-        .message-info { background-color: #eaf2f8; color: #34495e; }
-        .message-error { background-color: #fbeee6; color: #c0392b; }
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: #EAEAEA;
+            color: #000000;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .main-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .converter-card {
+            background-color: #FFFFFF;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .step-label {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            border: none;
+            border-radius: 12px;
+            box-sizing: border-box;
+            background-color: #2D2D2D;
+            color: #FFFFFF;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        input[type="text"]::placeholder {
+            color: #A0A0A0;
+        }
+
+        .upload-area {
+            border: 2px dashed #D0D0D0;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .upload-area svg {
+            margin-bottom: 12px;
+        }
+        .upload-area a {
+            color: #000;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .upload-area p {
+            color: #666;
+            font-size: 14px;
+            margin: 4px 0 0 0;
+        }
+
+        .upload-requirement {
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 16px;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: #2D2D2D;
+            color: #FFFFFF;
+        }
+
+        .get-token-section {
+            text-align: center;
+        }
+        .get-token-section p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .get-token-button {
+            display: inline-block;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background-color: #00AEEF;
+            color: #FFFFFF;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .disclaimer {
+            font-size: 12px;
+            color: #666;
+            max-width: 350px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* Message area styles for error/success messages */
+        .message-area {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .message-info {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        .message-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Unlock Your Procreate Brushes</h1>
-        <p style="text-align: center;">Convert any Procreate <code>.brushset</code> file into high-resolution PNGs for Photoshop, Clip Studio Paint, and any other art software.</p>
+    <h1 class="main-title">CONVERT YOUR PROCREATE BRUSHSET</h1>
 
-        <h2>How It Works</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Step 1</th>
-                    <th>Step 2</th>
-                    <th>Step 3</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Purchase on Etsy</strong>  
-Buy a token pack from my Etsy shop to get your unique Order ID.</td>
-                    <td><strong>Submit Your Brush Set</strong>  
-Return here, enter your Order ID, and upload your file.</td>
-                    <td><strong>Receive Your PNGs</strong>  
-We'll convert your brushset and email you a secure download link in minutes.</td>
-                </tr>
-            </tbody>
-        </table>
-        <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="cta-button">Get Token Here</a>
+    <div class="converter-card">
+        <form method="post" enctype="multipart/form-data">
+            <p class="step-label">Step 1: Enter Your Etsy Order Id.</p>
+            <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
 
-        <div class="requirements">
-            <h3>Upload Requirements</h3>
-            <ul>
-                <li>Must be a valid <code>.brushset</code> file.</li>
-                <li>Max file size: 50 MB</li>
-                <li>Max stamp count: 100 stamps per set</li>
-            </ul>
-        </div>
+            <p class="step-label">Step 2: Upload Your .brushset File</p>
+            <div class="upload-area">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 18V12" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 15L12 12L15 15" stroke="#D0D0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <p><a href="#" onclick="document.getElementById(\'brush_file\' ).click(); return false;">Click to upload</a> or drag and drop</p>
+                <p>Maximum file size 50 MB.</p>
+                <input type="file" id="brush_file" name="brush_file" required style="display: none;">
+            </div>
 
-        <h2>Let's Get Started</h2>
-        <div class="form-section">
-            <form method="post" enctype="multipart/form-data">
-                <label for="order_id">Step 1: Enter Your Etsy Order ID</label>
-                <input type="text" id="order_id" name="order_id" placeholder="e.g., 123456789" required>
+            <!-- Message area for displaying errors or info -->
+            {% if message %}
+            <div class="message-area {{ \'message-error\' if \'Error:\' in message else \'message-info\' }}">
+                {{ message }}
+            </div>
+            {% endif %}
 
-                <label for="brush_file">Step 2: Upload Your .brushset File</label>
-                <input type="file" id="brush_file" name="brush_file" required>
-
-                <!-- --- ** THE NEW MESSAGE AREA ** --- -->
-                <div class="message-area {{ 'message-error' if message and 'Error:' in message else 'message-info' }}">
-                    {% if message %}
-                        {{ message }}
-                    {% else %}
-                        <strong>Disclaimer:</strong> This tool is for extracting stamp/shape images only, not complex brush textures.
-                    {% endif %}
-                </div>
-
-                <button type="submit" class="cta-button">Convert My Brushes</button>
-            </form>
-        </div>
+            <p class="upload-requirement">Upload Requirement: Must be a valid Procreate .brushset file.</p>
+            <button type="submit" class="submit-button">Convert Your Brushset</button>
+        </form>
     </div>
+
+    <div class="get-token-section">
+        <p>Haven\'t got your etsy order ID yet?</p>
+        <a href="https://www.etsy.com/shop/PresentAndCherish" target="_blank" class="get-token-button">Get Token Here</a>
+        <p class="disclaimer">Disclaimer: This tool is for extracting Procreate stamp/shape images only, NOT complex brush textures.</p>
+    </div>
+
 </body>
 </html>
