@@ -17,7 +17,7 @@ MIN_IMAGE_DIMENSION = 500
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# --- Helper Function (UPDATED) ---
+# --- Helper Function ---
 def process_brushset(filepath, make_transparent=False):
     base_filename = os.path.basename(filepath)
     temp_extract_dir = os.path.join(UPLOAD_FOLDER, f"extract_{base_filename}")
@@ -42,7 +42,6 @@ def process_brushset(filepath, make_transparent=False):
                             if width >= MIN_IMAGE_DIMENSION and height >= MIN_IMAGE_DIMENSION:
                                 final_image = img
                                 
-                                # --- CRITICAL CHANGE: Only convert if requested ---
                                 if make_transparent and img.mode == 'L':
                                     transparent_img = Image.new('RGBA', img.size, (0, 0, 0, 0))
                                     transparent_img.putalpha(img)
@@ -68,22 +67,19 @@ def process_brushset(filepath, make_transparent=False):
         if os.path.exists(temp_extract_dir):
             shutil.rmtree(temp_extract_dir)
 
-# --- Main Application Route (UPDATED) ---
+# --- Main Application Route ---
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        # --- 1. Get Form Data ---
         order_id = request.form.get('order_id')
-        # The checkbox will send 'true' if checked, or nothing if not.
         make_transparent = request.form.get('make_transparent') == 'true'
         uploaded_files = request.files.getlist('brush_files')
 
-        # --- 2. Validation ---
         try:
             if not order_id or not order_id.strip():
                  return render_template('index.html', message="Error: Please provide a valid Etsy Order ID.")
             
-            # --- This is the block to uncomment when you go live ---
+            # --- Live Etsy API validation block ---
             # api_url = f"https://openapi.etsy.com/v3/application/shops/{ETSY_SHOP_ID}/receipts/{order_id.strip( )}"
             # headers = {'x-api-key': ETSY_API_KEY}
             # response = requests.get(api_url, headers=headers, timeout=10)
@@ -102,22 +98,21 @@ def home():
         if len(uploaded_files) > 10:
             return render_template('index.html', message="Error: You cannot upload more than 10 files at once.")
 
-        # --- 3. File Processing ---
         temp_folders_to_clean = []
         temp_files_to_clean = []
         error_messages = []
         processed_data = {}
+        final_zip_path = "" # Define here to be accessible in finally
 
-        for uploaded_file in uploaded_files:
-            if uploaded_file and uploaded_file.filename.lower().endswith('.brushset'):
-                filename = secure_filename(uploaded_file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                
-                try:
+        try:
+            for uploaded_file in uploaded_files:
+                if uploaded_file and uploaded_file.filename.lower().endswith('.brushset'):
+                    filename = secure_filename(uploaded_file.filename)
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    
                     uploaded_file.save(filepath)
                     temp_files_to_clean.append(filepath)
                     
-                    # Pass the make_transparent flag to the processing function
                     output_folder, error_message = process_brushset(filepath, make_transparent)
                     
                     if error_message:
@@ -126,27 +121,20 @@ def home():
                         temp_folders_to_clean.append(output_folder)
                         png_files = [os.path.join(output_folder, f) for f in os.listdir(output_folder) if f.endswith('.png')]
                         processed_data[filename.replace('.brushset', '')] = png_files
-                except Exception as e:
-                    print(f"Error saving or processing {filename}: {e}")
-                    error_messages.append(f"{filename}: A server error occurred.")
-            else:
-                error_messages.append(f"{uploaded_file.filename or 'Unknown file'}: Invalid file type.")
+                else:
+                    error_messages.append(f"{uploaded_file.filename or 'Unknown file'}: Invalid file type.")
 
-        if error_messages:
-            for path in temp_files_to_clean:
-                if os.path.exists(path): os.remove(path)
-            for path in temp_folders_to_clean:
-                if os.path.exists(path): shutil.rmtree(path, ignore_errors=True)
-            return render_template('index.html', message="; ".join(error_messages))
+            if error_messages:
+                # This is now a standard Python list comprehension, which is safe.
+                error_string = "; ".join(error_messages)
+                return render_template('index.html', message=error_string)
 
-        if not processed_data:
-            return render_template('index.html', message="Error: No valid brushes could be processed.")
+            if not processed_data:
+                return render_template('index.html', message="Error: No valid brushes could be processed.")
 
-        # --- 4. Combine into Final Zip ---
-        final_zip_filename = f"Converted_Brushes_{order_id}.zip"
-        final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
+            final_zip_filename = f"Converted_Brushes_{order_id}.zip"
+            final_zip_path = os.path.join(UPLOAD_FOLDER, final_zip_filename)
 
-        try:
             with zipfile.ZipFile(final_zip_path, 'w') as final_zip:
                 for brushset_name, png_paths in processed_data.items():
                     for i, png_path in enumerate(png_paths):
@@ -156,16 +144,20 @@ def home():
             return send_file(final_zip_path, as_attachment=True)
 
         except Exception as e:
-            print(f"Error creating final zip: {e}")
-            return render_template('index.html', message="Error creating the final combined zip file.")
+            print(f"Error in main processing block: {e}")
+            return render_template('index.html', message="An unexpected server error occurred.")
         
         finally:
-            # --- 5. Final Cleanup ---
+            # --- CORRECTED CLEANUP BLOCK ---
             for path in temp_files_to_clean:
-                if os.path.exists(path): os.remove(path)
+                if os.path.exists(path):
+                    os.remove(path)
+            
             for path in temp_folders_to_clean:
-                if os.path.exists(path): shutil.rmtree(path, ignore_errors=True)
-            if os.path.exists(final_zip_path):
+                if os.path.exists(path):
+                    shutil.rmtree(path, ignore_errors=True)
+
+            if final_zip_path and os.path.exists(final_zip_path):
                 os.remove(final_zip_path)
 
-    return render_template('index.html',
+    return render_template('index.html', message="")
